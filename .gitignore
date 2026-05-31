@@ -1,0 +1,27 @@
+# Maven build output
+target/
+*/target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.classpath
+*.project
+.settings/
+
+# Logs
+logs/
+*.log
+
+# Environment / secrets
+.env
+.env.*
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db
