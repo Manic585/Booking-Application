@@ -1,14 +1,13 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
-  selector: 'app-register',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
-  template: `
+    selector: 'app-register',
+    imports: [ReactiveFormsModule, RouterLink],
+    template: `
     <div class="auth-container">
       <div class="auth-card">
         <h1>Create Account</h1>
@@ -32,7 +31,9 @@ import { AuthService } from '../../../core/auth/auth.service';
             <input type="password" formControlName="password" />
             <span class="hint">Minimum 8 characters</span>
           </div>
-          <div class="error" *ngIf="error">{{ error }}</div>
+          @if (error) {
+            <div class="error">{{ error }}</div>
+          }
           <button type="submit" [disabled]="form.invalid || loading">
             {{ loading ? 'Creating account...' : 'Create Account' }}
           </button>
@@ -40,8 +41,8 @@ import { AuthService } from '../../../core/auth/auth.service';
         <p>Have an account? <a routerLink="/auth/login">Sign in</a></p>
       </div>
     </div>
-  `,
-  styles: [`
+    `,
+    styles: [`
     .auth-container { display:flex; justify-content:center; align-items:center; min-height:100vh; background:#f5f5f5; }
     .auth-card { background:white; padding:2rem; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.1); width:400px; }
     .row { display:flex; gap:1rem; }

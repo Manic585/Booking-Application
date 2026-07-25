@@ -1,6 +1,8 @@
-# BookIt — Production-Grade Booking System
+# BookIt — Indian Cinema Movie Ticket Booking Platform
 
-A production-style, microservices booking platform (flight/hotel/cinema) built with **Java 21 + Spring Boot 3**, **Angular 17**, **PostgreSQL**, **Redis**, **Kafka**, and **Spring AI (GPT-4o-mini)**.
+A production-style, microservices movie ticket booking platform for Indian cinemas, built with **Java 21 + Spring Boot 3**, **Angular 21**, **PostgreSQL**, **Redis**, **Kafka**, and **Spring AI (GPT-4o-mini)**.
+
+Users search a movie show by seat class (Normal / Executive / Premium / Recliner), pick a seat, and pay in INR via UPI/card/net-banking/wallet — with the same production-grade concurrency control, saga orchestration, and idempotency guarantees you'd want for a real high-traffic booking system (think BookMyShow-style seat contention on a Friday release).
 
 ---
 
@@ -9,7 +11,8 @@ A production-style, microservices booking platform (flight/hotel/cinema) built w
 ```
                          ┌─────────────────────────────────────────────┐
                          │              Angular Frontend                │
-                         │   Login · Search · Book · Dashboard · Chat   │
+                         │  Login · Search Shows · Book Seat · Dashboard│
+                         │              · AI Chat                       │
                          └────────────────────┬────────────────────────┘
                                               │ HTTPS
                          ┌────────────────────▼────────────────────────┐
@@ -19,9 +22,11 @@ A production-style, microservices booking platform (flight/hotel/cinema) built w
                          └─────┬─────────┬────────┬────────┬───────────┘
                                │         │        │        │
              ┌─────────────────▼──┐  ┌───▼──┐ ┌──▼───┐ ┌──▼───────────┐
-             │  User Service :8081│  │Inven-│ │Book- │ │  Payment     │
-             │  Auth · JWT · Redis│  │tory  │ │ing   │ │  Service     │
-             │  BCrypt · Flyway   │  │:8082 │ │:8083 │ │  :8084       │
+             │  User Service :8081│  │Seat  │ │Book- │ │  Payment     │
+             │  Auth · JWT · Redis│  │Inven-│ │ing   │ │  Service     │
+             │  BCrypt · Flyway   │  │tory  │ │Ser-  │ │  UPI/Card/   │
+             │                    │  │:8082 │ │vice  │ │  Wallet      │
+             │                    │  │      │ │:8083 │ │  :8084       │
              └────────────────────┘  └──┬───┘ └──┬───┘ └──────┬───────┘
                                         │        │             │
                               ┌──────────▼────────▼─────────────▼──────┐
@@ -35,11 +40,19 @@ A production-style, microservices booking platform (flight/hotel/cinema) built w
                                   │                                      │
                        ┌──────────▼──────────┐       ┌──────────────────▼──────┐
                        │  Notification :8085  │       │     AI Service :8086    │
-                       │  Email (SMTP/SES)    │       │  Spring AI · GPT-4o-mini│
+                       │  E-ticket email      │       │  Spring AI · GPT-4o-mini│
                        └─────────────────────┘       │  Chat · Recommendations │
                                                       │  Function-calling tools │
                                                       └─────────────────────────┘
 ```
+
+### Domain model
+
+BookIt intentionally keeps a **generic reference-ID + inventory-item** model rather than a full theatre/screen/show relational schema:
+
+- `referenceId` (a `UUID`) identifies a specific **movie show** (a screening — movie × theatre × screen × showtime). Show/theatre/movie catalog data is treated as external/seeded reference data.
+- Each `InventoryItem` row is a single **bookable seat** for that show on a given date, tagged with a `seatClass`: `NORMAL`, `EXECUTIVE`, `PREMIUM`, or `RECLINER` — mirroring the tiered pricing used by Indian multiplex chains (PVR, INOX, Cinepolis).
+- A `Booking` ties a user to one seat (`inventoryItemId`) for one show (`referenceId`), and a `Payment` settles it in **INR**.
 
 ---
 
@@ -49,25 +62,25 @@ A production-style, microservices booking platform (flight/hotel/cinema) built w
 |---------|------|----------|---------------|
 | API Gateway | 8080 | Redis | Routing, auth, rate-limiting |
 | User Service | 8081 | PostgreSQL `userdb` | Register, login, JWT |
-| Inventory Service | 8082 | PostgreSQL `inventorydb` | Seat/room availability & locking |
-| Booking Service | 8083 | PostgreSQL `bookingdb` | Booking lifecycle, saga orchestration |
-| Payment Service | 8084 | PostgreSQL `paymentdb` | Payment processing, circuit breaker |
-| Notification Service | 8085 | — | Email on booking events |
-| AI Service | 8086 | — (in-memory) | Conversational assistant, recommendations |
+| Inventory Service | 8082 | PostgreSQL `inventorydb` | Cinema seat availability & locking, per show/date/seat-class |
+| Booking Service | 8083 | PostgreSQL `bookingdb` | Ticket booking lifecycle, saga orchestration |
+| Payment Service | 8084 | PostgreSQL `paymentdb` | UPI/card/wallet/net-banking payment processing, circuit breaker |
+| Notification Service | 8085 | — | E-ticket email on booking events |
+| AI Service | 8086 | — (in-memory) | Conversational movie-booking assistant, seat recommendations |
 
 ---
 
 ## AI Service
 
-The AI Service (`ai-service`, port **8086**) adds a conversational layer on top of the booking platform using **Spring AI** and **OpenAI GPT-4o-mini**.
+The AI Service (`ai-service`, port **8086**) adds a conversational layer on top of the ticket booking platform using **Spring AI** and **OpenAI GPT-4o-mini**.
 
 ### Features
 
 | Feature | Details |
 |---------|---------|
 | Conversational assistant | Multi-turn chat with in-memory conversation history (last 20 messages per session) |
-| Function-calling tools | `searchAvailability` calls Inventory Service; `getBookingStatus` calls Booking Service; `getBookingFAQ` serves FAQ answers locally |
-| Booking recommendations | Structured JSON recommendations (summary, tips, price range, top picks) based on type, date, and budget |
+| Function-calling tools | `searchAvailability` calls Inventory Service for a show's open seats by class; `getBookingStatus` calls Booking Service; `getBookingFAQ` serves FAQ answers locally |
+| Seat/show recommendations | Structured JSON recommendations (summary, tips, price range in ₹, top picks) based on seat-class preference, date, and budget |
 | Quick insight | One-shot question endpoint with no conversation memory |
 
 ### How the assistant works
@@ -77,7 +90,7 @@ User message
      │
      ▼
 ChatClient (Spring AI)
-     │  system prompt: BookIt AI persona + today's date + available inventory types
+     │  system prompt: BookIt AI persona (Indian cinema) + today's date + available seat classes
      │  memory advisor: injects last N messages from in-memory store (per conversationId)
      ├─► Tool: searchAvailability  → GET http://inventory-service:8082/api/inventory/availability
      ├─► Tool: getBookingStatus    → GET http://booking-service:8083/api/bookings/{id}
@@ -88,6 +101,62 @@ ChatResponse { reply, conversationId, suggestions[] }
 ```
 
 GPT-4o-mini decides when to call which tool. The `conversationId` returned on the first call should be sent on subsequent calls to maintain context.
+
+---
+
+## Frontend (Angular 21, Standalone Components)
+
+The `frontend/` app is a standalone-component Angular 21 SPA — no `NgModule`s. Routes lazy-load each feature via `loadComponent`.
+
+### Structure
+
+```
+frontend/src/app/
+├── core/
+│   ├── auth/auth.service.ts          Login/register/refresh, JWT decode, signal-based currentUser
+│   ├── guards/auth.guard.ts          CanActivateFn — redirects to /auth/login if token invalid/expired
+│   ├── interceptors/auth.interceptor.ts   Attaches Bearer token, auto-refreshes on 401, retries once
+│   ├── services/booking.service.ts   Availability search, create/get/cancel booking
+│   ├── services/ai.service.ts        Chat, recommendations, quick-insight calls to AI Service
+│   └── models/                       TS interfaces mirroring backend DTOs
+├── features/
+│   ├── auth/login, auth/register     Reactive forms → AuthService
+│   ├── search/                       Availability search form + selectable item grid
+│   ├── booking/confirm/              Review selected item, confirm & pay, shows booking status
+│   ├── dashboard/                    Paginated booking history, cancel action, status badges
+│   └── ai/ai-chat.component.ts       Chat UI against AI Service (conversationId persisted client-side)
+├── app.routes.ts                     Route table (below)
+├── app.config.ts                     provideRouter, provideHttpClient(withInterceptors), provideAnimations
+└── environments/environment.ts       apiUrl: http://localhost:8080/api (API Gateway)
+```
+
+### Routing & route guard
+
+```
+''                  → redirect /search
+/auth/login          LoginComponent
+/auth/register       RegisterComponent
+/search               SearchComponent          [authGuard]
+/booking/confirm      BookingConfirmComponent  [authGuard]
+/dashboard             DashboardComponent      [authGuard]
+/ai-assistant          AiChatComponent         [authGuard]
+**                  → redirect /search
+```
+
+`authGuard` checks `AuthService.isAuthenticated()` (decodes the JWT payload client-side and compares `exp` to `Date.now()`); if invalid it redirects to `/auth/login` instead of activating the route.
+
+### How a user session works end-to-end
+
+1. **Login** — `LoginComponent` submits a reactive form to `AuthService.login()` → `POST /api/auth/login` through the gateway. On success, `accessToken`/`refreshToken` are stored in `localStorage` and `currentUser` (an Angular `signal`) is populated by decoding the JWT.
+2. **Every HTTP call** passes through `authInterceptor`, which adds `Authorization: Bearer <accessToken>`. If a request comes back `401` (and isn't itself an `/auth/*` call), the interceptor transparently calls `AuthService.refreshToken()`, retries the original request once with the new token, and only logs the user out if the refresh itself fails.
+3. **Search** — `SearchComponent` posts a form (`seatClass`, `referenceId` [show ID], `date`) to `BookingService.searchAvailability()` → `GET /api/inventory/availability`, renders the returned seats as a selectable grid priced in ₹.
+4. **Booking** — selecting a seat and clicking "Proceed to Book" navigates to `/booking/confirm`, passing the item via Angular Router state (no page reload, no query-string leakage of price data). `BookingConfirmComponent` calls `BookingService.createBooking()`, which generates a fresh `UUID v4` idempotency key per attempt (not per page load) and posts to `POST /api/bookings`. The returned booking (status `PENDING`/`INVENTORY_HELD`/etc.) is shown immediately — final confirmation arrives async via the Kafka saga and an e-ticket email.
+5. **Dashboard** — `DashboardComponent` loads paginated booking history (`GET /api/bookings`) and lets the user cancel a booking (`DELETE /api/bookings/{id}`) while it's still cancellable.
+6. **AI Assistant** — `AiChatComponent` calls `AiService.chat()` → `POST /api/ai/chat`, holding on to the `conversationId` returned by the first response so subsequent messages keep server-side context (see AI Service section above).
+
+### Build/serve
+
+`npm start` runs `ng serve` on port 4200 with `environment.ts` pointing `apiUrl` at the gateway (`http://localhost:8080/api`); `environment.prod.ts` is swapped in for `ng build --configuration production`. `frontend/proxy.conf.json` is available if you prefer proxying `/api` instead of hitting the gateway's CORS config directly.
 
 ---
 
@@ -123,7 +192,7 @@ User → POST /api/bookings
 Three layers of protection:
 
 1. **Redis Distributed Lock** (`RedisDistributedLock.java`)  
-   Before touching the DB, a `SET NX EX` lock is acquired per `itemId`. Concurrent requests for the same item queue at the Redis layer. Lock is released via atomic Lua script to prevent accidental release by another caller.
+   Before touching the DB, a `SET NX EX` lock is acquired per `itemId` (seat). Concurrent requests for the same seat — e.g. two users tapping the same recliner seat for a Friday-night houseful show — queue at the Redis layer. Lock is released via atomic Lua script to prevent accidental release by another caller.
 
 2. **Pessimistic DB Lock** (`@Lock(LockModeType.PESSIMISTIC_WRITE)`)  
    `findByIdWithLock()` issues `SELECT ... FOR UPDATE`. Even if two requests slip past Redis, only one holds the row lock.
@@ -184,11 +253,11 @@ Indexes: `email` (unique), `active` (partial — active=TRUE only)
 
 ### `inventory_items`
 ```sql
-id UUID PK, reference_id UUID, item_type, label, available_date DATE,
-status {AVAILABLE|HELD|BOOKED|CANCELLED}, booking_id UUID,
+id UUID PK, reference_id UUID (show ID), seat_class {NORMAL|EXECUTIVE|PREMIUM|RECLINER},
+label, available_date DATE, status {AVAILABLE|HELD|BOOKED|CANCELLED}, booking_id UUID,
 hold_expires_at TIMESTAMPTZ, price NUMERIC, version BIGINT
 ```
-Indexes: `(item_type, available_date, status)`, `(reference_id, available_date)`,
+Indexes: `(seat_class, available_date, status)`, `(reference_id, available_date)`,
 `booking_id`, `hold_expires_at WHERE status='HELD'`
 
 ### `bookings`
@@ -203,8 +272,8 @@ Indexes: `(user_id, created_at DESC)`, `status`, `(reference_id, booking_date)`
 ### `payments`
 ```sql
 id UUID PK, booking_id UUID, user_id UUID, amount NUMERIC,
-currency, status {PENDING|PROCESSING|COMPLETED|FAILED|REFUNDED},
-payment_method, payment_reference, gateway_transaction_id,
+currency (default 'INR'), status {PENDING|PROCESSING|COMPLETED|FAILED|REFUNDED},
+payment_method {CARD|UPI|WALLET|NET_BANKING}, payment_reference, gateway_transaction_id,
 idempotency_key UNIQUE, failure_reason TEXT
 ```
 Indexes: `booking_id`, `user_id`, `status`
@@ -265,7 +334,7 @@ State lives in PostgreSQL (durability), Redis (sessions/locks), Kafka (events).
 - **PostgreSQL 16** — install locally or via Homebrew: `brew install postgresql@16`
 - **Redis 7** — `brew install redis`
 - **Apache Kafka 3.6** — download from [kafka.apache.org](https://kafka.apache.org/downloads) or `brew install kafka`
-- **Node 20 + Angular CLI** — for the frontend
+- **Node 20.19+ / 22.12+ / 24+ + Angular CLI 21** — for the frontend
 
 ### 1. Start infrastructure
 
@@ -363,14 +432,14 @@ POST   /api/auth/login             Login, returns JWT
 POST   /api/auth/refresh           Refresh access token
 GET    /api/users/me               Current user profile
 
-GET    /api/inventory/availability?referenceId=&date=&type=   Search available items
+GET    /api/inventory/availability?referenceId=&date=&seatClass=   Search available seats for a show
 
 POST   /api/bookings               Create booking (idempotent)
 GET    /api/bookings               My booking history (paginated)
 GET    /api/bookings/{id}          Single booking
 DELETE /api/bookings/{id}          Cancel booking
 
-POST   /api/payments               Process payment (idempotent)
+POST   /api/payments               Process payment via UPI/card/wallet/net-banking (idempotent)
 GET    /api/payments/booking/{id}  Payment for a booking
 
 # AI Service  (port 8086 — direct, not routed through gateway)
@@ -378,9 +447,9 @@ POST   /api/ai/chat                Conversational assistant (multi-turn)
                                    Body: { "message": "...", "conversationId": "...", "userId": "..." }
                                    Returns: { "reply": "...", "conversationId": "...", "suggestions": [...] }
 
-POST   /api/ai/recommendations     AI-generated recommendations
-                                   Body: { "bookingType": "FLIGHT_SEAT|HOTEL_ROOM|CINEMA_SEAT",
-                                           "date": "YYYY-MM-DD", "preferences": "...", "budget": "..." }
+POST   /api/ai/recommendations     AI-generated seat-class/show recommendations
+                                   Body: { "bookingType": "CINEMA",
+                                           "date": "YYYY-MM-DD", "preferences": "...", "budget": "e.g. under ₹500" }
                                    Returns: { "summary", "tips", "bestTimeToBook",
                                               "estimatedPriceRange", "topPicks" }
 
@@ -395,7 +464,8 @@ GET    /api/ai/insight?question=   One-shot question (no conversation memory)
 |----------|--------|-----------|
 | Database per service | Separate PostgreSQL instances | Higher infra cost vs. clear boundaries |
 | Saga (choreography) | Kafka events | No central coordinator needed; harder to trace end-to-end |
-| Optimistic + Pessimistic lock | Both layers | Slight write overhead; eliminates double-booking under any race |
+| Optimistic + Pessimistic lock | Both layers | Slight write overhead; eliminates double-seat-booking under any race (e.g. same seat tapped by two users simultaneously) |
+| Generic `referenceId` for shows | No dedicated theatre/screen/movie tables | Keeps the booking pipeline decoupled from catalog data; a real deployment would seed shows from a separate catalog service |
 | JWT stateless + Redis refresh | Hybrid | Balance between stateless scaling and token revocation capability |
 | Idempotency via DB unique key | Application-level | Simple, correct; requires client to manage idempotency keys |
 | Single Redis node | One Redis | Sufficient when DB locking is the true safety net; Redlock for stricter needs |

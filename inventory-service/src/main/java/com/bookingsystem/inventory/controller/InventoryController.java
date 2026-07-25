@@ -25,10 +25,10 @@ public class InventoryController {
     public ResponseEntity<AvailabilityResponse> getAvailability(
             @RequestParam UUID referenceId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestParam(defaultValue = "FLIGHT_SEAT") InventoryItem.ItemType type,
+            @RequestParam(defaultValue = "NORMAL") InventoryItem.SeatClass seatClass,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        return ResponseEntity.ok(inventoryService.getAvailability(referenceId, date, type, page, size));
+        return ResponseEntity.ok(inventoryService.getAvailability(referenceId, date, seatClass, page, size));
     }
 
     @PostMapping("/hold")

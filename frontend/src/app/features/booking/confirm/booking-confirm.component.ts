@@ -5,57 +5,59 @@ import { BookingService } from '../../../core/services/booking.service';
 import { Booking, InventoryItem } from '../../../core/models/booking.model';
 
 @Component({
-  selector: 'app-booking-confirm',
-  standalone: true,
-  imports: [CommonModule, RouterLink],
-  template: `
+    selector: 'app-booking-confirm',
+    imports: [CommonModule, RouterLink],
+    template: `
     <div class="page">
       <a routerLink="/search" class="back">← Back to Search</a>
-
-      <div class="confirm-card" *ngIf="item">
-        <h2>Confirm Your Booking</h2>
-
-        <div class="detail-row">
-          <span class="label">Seat / Room</span>
-          <span class="value">{{ item.label }}</span>
+    
+      @if (item) {
+        <div class="confirm-card">
+          <h2>Confirm Your Booking</h2>
+          <div class="detail-row">
+            <span class="label">Seat</span>
+            <span class="value">{{ item.label }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Show Date</span>
+            <span class="value">{{ date }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Seat Class</span>
+            <span class="value">{{ item.seatClass }}</span>
+          </div>
+          <div class="detail-row total">
+            <span class="label">Total</span>
+            <span class="value">₹{{ item.price | number:'1.2-2' }}</span>
+          </div>
+          <div class="notice">
+            ⏳ Seats are held for 10 minutes once you confirm. Please complete payment promptly.
+          </div>
+          @if (error) {
+            <div class="error">{{ error }}</div>
+          }
+          @if (!booking()) {
+            <div class="actions">
+              <button class="confirm-btn" (click)="confirm()" [disabled]="loading()">
+                {{ loading() ? 'Processing...' : 'Confirm & Pay' }}
+              </button>
+            </div>
+          }
+          @if (booking()) {
+            <div class="success">
+              <div class="checkmark">✅</div>
+              <h3>Booking Submitted!</h3>
+              <p>Booking ID: <strong>{{ booking()!.id }}</strong></p>
+              <p>Status: <strong>{{ booking()!.status }}</strong></p>
+              <p class="note">Payment is being processed. You'll receive a confirmation email shortly.</p>
+              <a routerLink="/dashboard" class="dashboard-link">View My Bookings →</a>
+            </div>
+          }
         </div>
-        <div class="detail-row">
-          <span class="label">Date</span>
-          <span class="value">{{ date }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Type</span>
-          <span class="value">{{ bookingType }}</span>
-        </div>
-        <div class="detail-row total">
-          <span class="label">Total</span>
-          <span class="value">\${{ item.price | number:'1.2-2' }}</span>
-        </div>
-
-        <div class="notice">
-          ⏳ Seats are held for 10 minutes once you confirm. Please complete payment promptly.
-        </div>
-
-        <div class="error" *ngIf="error">{{ error }}</div>
-
-        <div class="actions" *ngIf="!booking()">
-          <button class="confirm-btn" (click)="confirm()" [disabled]="loading()">
-            {{ loading() ? 'Processing...' : 'Confirm & Pay' }}
-          </button>
-        </div>
-
-        <div class="success" *ngIf="booking()">
-          <div class="checkmark">✅</div>
-          <h3>Booking Submitted!</h3>
-          <p>Booking ID: <strong>{{ booking()!.id }}</strong></p>
-          <p>Status: <strong>{{ booking()!.status }}</strong></p>
-          <p class="note">Payment is being processed. You'll receive a confirmation email shortly.</p>
-          <a routerLink="/dashboard" class="dashboard-link">View My Bookings →</a>
-        </div>
-      </div>
+      }
     </div>
-  `,
-  styles: [`
+    `,
+    styles: [`
     .page { max-width:600px; margin:2rem auto; padding:0 1rem; }
     .back { color:#1976d2; text-decoration:none; display:block; margin-bottom:1rem; }
     .confirm-card { background:white; padding:2rem; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.1); }
@@ -76,7 +78,7 @@ import { Booking, InventoryItem } from '../../../core/models/booking.model';
 export class BookingConfirmComponent implements OnInit {
   item: InventoryItem | null = null;
   date = '';
-  bookingType = '';
+  bookingType: 'CINEMA' = 'CINEMA';
   booking = signal<Booking | null>(null);
   loading = signal(false);
   error = '';
@@ -91,7 +93,6 @@ export class BookingConfirmComponent implements OnInit {
     }
     this.item = state.item;
     this.date = state.date;
-    this.bookingType = state.bookingType;
   }
 
   confirm(): void {
@@ -101,7 +102,7 @@ export class BookingConfirmComponent implements OnInit {
 
     this.bookingService.createBooking({
       referenceId: this.item.referenceId,
-      bookingType: this.bookingType as any,
+      bookingType: this.bookingType,
       inventoryItemId: this.item.id,
       bookingDate: this.date,
       totalAmount: this.item.price

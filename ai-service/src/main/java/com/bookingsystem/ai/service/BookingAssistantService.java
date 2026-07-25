@@ -55,18 +55,12 @@ public class BookingAssistantService {
     private List<String> deriveSuggestions(String response) {
         if (response == null) return List.of();
         String lower = response.toLowerCase();
-        if (lower.contains("flight") || lower.contains("seat")) {
-            return List.of("Search flights", "Search hotels", "View my bookings");
-        }
-        if (lower.contains("hotel") || lower.contains("room")) {
-            return List.of("Search hotels", "Search flights", "View my bookings");
-        }
-        if (lower.contains("cinema") || lower.contains("movie")) {
-            return List.of("Search cinema seats", "Search flights", "View my bookings");
+        if (lower.contains("seat") || lower.contains("show") || lower.contains("movie")) {
+            return List.of("Search showtimes", "Recommend a seat class", "View my bookings");
         }
         if (lower.contains("booking") || lower.contains("cancel")) {
-            return List.of("View my bookings", "Search availability", "Contact support");
+            return List.of("View my bookings", "Search showtimes", "Contact support");
         }
-        return List.of("Search availability", "View my bookings", "What can I book?");
+        return List.of("Search showtimes", "View my bookings", "What can I book?");
     }
 }

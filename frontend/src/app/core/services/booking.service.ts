@@ -10,12 +10,12 @@ export class BookingService {
 
   constructor(private http: HttpClient) {}
 
-  searchAvailability(referenceId: string, date: string, type: string,
+  searchAvailability(referenceId: string, date: string, seatClass: string,
                       page = 0, size = 50): Observable<AvailabilityResponse> {
     const params = new HttpParams()
       .set('referenceId', referenceId)
       .set('date', date)
-      .set('type', type)
+      .set('seatClass', seatClass)
       .set('page', page)
       .set('size', size);
     return this.http.get<AvailabilityResponse>(`${environment.apiUrl}/inventory/availability`, { params });

@@ -6,69 +6,81 @@ import { AuthService } from '../../core/auth/auth.service';
 import { Booking } from '../../core/models/booking.model';
 
 @Component({
-  selector: 'app-dashboard',
-  standalone: true,
-  imports: [CommonModule, RouterLink],
-  template: `
+    selector: 'app-dashboard',
+    imports: [CommonModule, RouterLink],
+    template: `
     <div class="page">
       <header class="page-header">
         <h1>My Bookings</h1>
         <a routerLink="/search" class="new-booking-btn">+ New Booking</a>
       </header>
-
-      <div class="loading" *ngIf="loading()">Loading your bookings...</div>
-
-      <div class="empty" *ngIf="!loading() && bookings().length === 0">
-        <p>No bookings yet.</p>
-        <a routerLink="/search">Search and book now →</a>
-      </div>
-
-      <div class="bookings-list" *ngIf="bookings().length > 0">
-        <div class="booking-card" *ngFor="let b of bookings()">
-          <div class="booking-header">
-            <span class="booking-type">{{ bookingTypeIcon(b.bookingType) }} {{ b.bookingType }}</span>
-            <span class="status-badge" [class]="'status-' + b.status.toLowerCase()">
-              {{ b.status }}
-            </span>
-          </div>
-          <div class="booking-body">
-            <div class="detail">
-              <span class="detail-label">Booking ID</span>
-              <span class="detail-value mono">{{ b.id | slice:0:8 }}…</span>
-            </div>
-            <div class="detail">
-              <span class="detail-label">Date</span>
-              <span class="detail-value">{{ b.bookingDate }}</span>
-            </div>
-            <div class="detail">
-              <span class="detail-label">Amount</span>
-              <span class="detail-value">\${{ b.totalAmount | number:'1.2-2' }}</span>
-            </div>
-            <div class="detail">
-              <span class="detail-label">Booked on</span>
-              <span class="detail-value">{{ b.createdAt | date:'mediumDate' }}</span>
-            </div>
-          </div>
-          <div class="booking-footer">
-            <span class="failure-reason" *ngIf="b.failureReason">⚠️ {{ b.failureReason }}</span>
-            <button class="cancel-btn"
-                    *ngIf="canCancel(b.status)"
+    
+      @if (loading()) {
+        <div class="loading">Loading your bookings...</div>
+      }
+    
+      @if (!loading() && bookings().length === 0) {
+        <div class="empty">
+          <p>No bookings yet.</p>
+          <a routerLink="/search">Search and book now →</a>
+        </div>
+      }
+    
+      @if (bookings().length > 0) {
+        <div class="bookings-list">
+          @for (b of bookings(); track b) {
+            <div class="booking-card">
+              <div class="booking-header">
+                <span class="booking-type">{{ bookingTypeIcon(b.bookingType) }} {{ b.bookingType }}</span>
+                <span class="status-badge" [class]="'status-' + b.status.toLowerCase()">
+                  {{ b.status }}
+                </span>
+              </div>
+              <div class="booking-body">
+                <div class="detail">
+                  <span class="detail-label">Booking ID</span>
+                  <span class="detail-value mono">{{ b.id | slice:0:8 }}…</span>
+                </div>
+                <div class="detail">
+                  <span class="detail-label">Date</span>
+                  <span class="detail-value">{{ b.bookingDate }}</span>
+                </div>
+                <div class="detail">
+                  <span class="detail-label">Amount</span>
+                  <span class="detail-value">₹{{ b.totalAmount | number:'1.2-2' }}</span>
+                </div>
+                <div class="detail">
+                  <span class="detail-label">Booked on</span>
+                  <span class="detail-value">{{ b.createdAt | date:'mediumDate' }}</span>
+                </div>
+              </div>
+              <div class="booking-footer">
+                @if (b.failureReason) {
+                  <span class="failure-reason">⚠️ {{ b.failureReason }}</span>
+                }
+                @if (canCancel(b.status)) {
+                  <button class="cancel-btn"
                     (click)="cancel(b.id)"
                     [disabled]="cancelling() === b.id">
-              {{ cancelling() === b.id ? 'Cancelling...' : 'Cancel' }}
-            </button>
-          </div>
+                    {{ cancelling() === b.id ? 'Cancelling...' : 'Cancel' }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
         </div>
-      </div>
-
-      <div class="pagination" *ngIf="totalPages() > 1">
-        <button (click)="prevPage()" [disabled]="page() === 0">← Prev</button>
-        <span>Page {{ page() + 1 }} of {{ totalPages() }}</span>
-        <button (click)="nextPage()" [disabled]="page() + 1 >= totalPages()">Next →</button>
-      </div>
+      }
+    
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <button (click)="prevPage()" [disabled]="page() === 0">← Prev</button>
+          <span>Page {{ page() + 1 }} of {{ totalPages() }}</span>
+          <button (click)="nextPage()" [disabled]="page() + 1 >= totalPages()">Next →</button>
+        </div>
+      }
     </div>
-  `,
-  styles: [`
+    `,
+    styles: [`
     .page { max-width:800px; margin:2rem auto; padding:0 1rem; }
     .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; }
     .new-booking-btn { padding:.5rem 1rem; background:#1976d2; color:white; text-decoration:none; border-radius:4px; }
@@ -134,8 +146,7 @@ export class DashboardComponent implements OnInit {
   }
 
   bookingTypeIcon(type: string): string {
-    const icons: Record<string, string> = { FLIGHT: '✈️', HOTEL: '🏨', CINEMA: '🎬' };
-    return icons[type] ?? '📋';
+    return '🎬';
   }
 
   prevPage(): void { this.page.update(p => p - 1); this.loadBookings(); }

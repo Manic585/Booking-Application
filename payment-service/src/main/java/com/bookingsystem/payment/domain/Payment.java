@@ -37,7 +37,7 @@ public class Payment {
 
     @Column(nullable = false, length = 10)
     @Builder.Default
-    private String currency = "USD";
+    private String currency = "INR";
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

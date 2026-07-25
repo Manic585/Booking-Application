@@ -38,9 +38,9 @@ public class InventoryService {
     @Cacheable(value = "availability", key = "#referenceId + ':' + #date + ':' + #page")
     @Transactional(readOnly = true)
     public AvailabilityResponse getAvailability(UUID referenceId, LocalDate date,
-                                                 InventoryItem.ItemType type, int page, int size) {
-        Page<InventoryItem> items = inventoryRepository.findByItemTypeAndAvailableDateAndStatus(
-                type, date, InventoryItem.Status.AVAILABLE, PageRequest.of(page, size));
+                                                 InventoryItem.SeatClass seatClass, int page, int size) {
+        Page<InventoryItem> items = inventoryRepository.findBySeatClassAndAvailableDateAndStatus(
+                seatClass, date, InventoryItem.Status.AVAILABLE, PageRequest.of(page, size));
 
         long available = inventoryRepository.countByReferenceIdAndAvailableDateAndStatus(
                 referenceId, date, InventoryItem.Status.AVAILABLE);
@@ -133,7 +133,7 @@ public class InventoryService {
         return InventoryItemResponse.builder()
                 .id(item.getId())
                 .referenceId(item.getReferenceId())
-                .itemType(item.getItemType().name())
+                .seatClass(item.getSeatClass().name())
                 .label(item.getLabel())
                 .availableDate(item.getAvailableDate())
                 .status(item.getStatus().name())

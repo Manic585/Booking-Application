@@ -73,9 +73,9 @@ public class BookingTools {
             case "payment" -> """
                     {
                       "topic": "Payment",
-                      "methods": ["CREDIT_CARD", "DEBIT_CARD", "NET_BANKING", "UPI"],
-                      "currency": "USD",
-                      "process": "Payment is processed securely after inventory is reserved.",
+                      "methods": ["UPI", "CARD", "NET_BANKING", "WALLET"],
+                      "currency": "INR",
+                      "process": "Payment is processed securely after the seat is reserved.",
                       "idempotency": "Each transaction uses a unique key to prevent double-charges.",
                       "refunds": "Refunds are processed within 5-7 business days."
                     }
@@ -84,12 +84,12 @@ public class BookingTools {
                     {
                       "topic": "Booking Process",
                       "steps": [
-                        "1. Search for available flights, hotels, or cinema seats by date",
-                        "2. Select your preferred item from the grid",
+                        "1. Search for available seats for a show by seat class and date",
+                        "2. Select your preferred seat from the grid",
                         "3. Click 'Proceed to Book' and confirm your details",
-                        "4. Inventory is held immediately upon submission",
-                        "5. Payment is processed — booking confirmed on success",
-                        "6. You receive an email notification"
+                        "4. The seat is held immediately upon submission",
+                        "5. Payment is processed via UPI/card — booking confirmed on success",
+                        "6. You receive an email notification with your e-ticket"
                       ]
                     }
                     """;
@@ -97,11 +97,11 @@ public class BookingTools {
                     {
                       "topic": "General FAQ",
                       "items": [
-                        {"q": "What can I book?", "a": "Flight seats, hotel rooms, and cinema seats."},
-                        {"q": "How do I search?", "a": "Select type, enter a reference ID and date in Search."},
+                        {"q": "What can I book?", "a": "Cinema seats for movie shows across Indian theatres."},
+                        {"q": "How do I search?", "a": "Select seat class, enter a show reference ID and date in Search."},
                         {"q": "Can I cancel?", "a": "Yes, from My Bookings for PENDING or INVENTORY_HELD bookings."},
                         {"q": "Is payment secure?", "a": "Yes — payments use idempotent keys and circuit-breaker protection."},
-                        {"q": "How long is inventory held?", "a": "A limited time; complete payment to confirm."}
+                        {"q": "How long is a seat held?", "a": "10 minutes; complete payment within that window to confirm."}
                       ]
                     }
                     """;

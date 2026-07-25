@@ -12,7 +12,7 @@ import java.util.UUID;
 public class InventoryItemResponse {
     private UUID id;
     private UUID referenceId;
-    private String itemType;
+    private String seatClass;
     private String label;
     private LocalDate availableDate;
     private String status;

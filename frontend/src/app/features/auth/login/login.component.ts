@@ -1,14 +1,13 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
-  selector: 'app-login',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
-  template: `
+    selector: 'app-login',
+    imports: [ReactiveFormsModule, RouterLink],
+    template: `
     <div class="auth-container">
       <div class="auth-card">
         <h1>Sign In</h1>
@@ -16,15 +15,19 @@ import { AuthService } from '../../../core/auth/auth.service';
           <div class="field">
             <label>Email</label>
             <input type="email" formControlName="email" placeholder="you@example.com" />
-            <span class="error" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">
-              Valid email required
-            </span>
+            @if (form.get('email')?.invalid && form.get('email')?.touched) {
+              <span class="error">
+                Valid email required
+              </span>
+            }
           </div>
           <div class="field">
             <label>Password</label>
             <input type="password" formControlName="password" placeholder="••••••••" />
           </div>
-          <div class="error" *ngIf="error">{{ error }}</div>
+          @if (error) {
+            <div class="error">{{ error }}</div>
+          }
           <button type="submit" [disabled]="form.invalid || loading">
             {{ loading ? 'Signing in...' : 'Sign In' }}
           </button>
@@ -32,8 +35,8 @@ import { AuthService } from '../../../core/auth/auth.service';
         <p>No account? <a routerLink="/auth/register">Register</a></p>
       </div>
     </div>
-  `,
-  styles: [`
+    `,
+    styles: [`
     .auth-container { display:flex; justify-content:center; align-items:center; min-height:100vh; background:#f5f5f5; }
     .auth-card { background:white; padding:2rem; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.1); width:360px; }
     h1 { margin-bottom:1.5rem; font-size:1.5rem; }

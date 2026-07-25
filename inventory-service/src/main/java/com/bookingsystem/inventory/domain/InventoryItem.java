@@ -11,12 +11,12 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Represents an allocatable unit: a flight seat, hotel room slot, or cinema seat for a specific date.
+ * Represents a single bookable cinema seat for a specific show (screening) and date.
  * Optimistic locking via @Version prevents lost-update anomalies under concurrent booking.
  */
 @Entity
 @Table(name = "inventory_items", indexes = {
-        @Index(name = "idx_inv_type_date", columnList = "item_type, available_date"),
+        @Index(name = "idx_inv_class_date", columnList = "seat_class, available_date"),
         @Index(name = "idx_inv_ref", columnList = "reference_id"),
         @Index(name = "idx_inv_status", columnList = "status")
 })
@@ -31,16 +31,16 @@ public class InventoryItem {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    /** External entity ID — e.g. flightId, hotelRoomId, movieScreeningId */
+    /** ID of the movie show (screening) this seat belongs to */
     @Column(nullable = false)
     private UUID referenceId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "item_type", nullable = false, length = 30)
-    private ItemType itemType;
+    @Column(name = "seat_class", nullable = false, length = 30)
+    private SeatClass seatClass;
 
     @Column(nullable = false, length = 50)
-    private String label; // "Seat 12A", "Room 204", "Row E Seat 7"
+    private String label; // "Row E Seat 7", "Recliner R3"
 
     @Column(nullable = false)
     private LocalDate availableDate;
@@ -70,7 +70,7 @@ public class InventoryItem {
     @UpdateTimestamp
     private Instant updatedAt;
 
-    public enum ItemType { FLIGHT_SEAT, HOTEL_ROOM, CINEMA_SEAT }
+    public enum SeatClass { NORMAL, EXECUTIVE, PREMIUM, RECLINER }
 
     public enum Status { AVAILABLE, HELD, BOOKED, CANCELLED }
 

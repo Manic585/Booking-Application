@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Stub for an external payment gateway (e.g., Stripe, Razorpay).
+ * Stub for an external Indian payment gateway (e.g., Razorpay, PayU) supporting UPI/card/wallet/net-banking.
  * In production this would call the gateway's SDK with proper retry/timeout config.
  */
 @Slf4j
@@ -18,7 +18,7 @@ public class PaymentGateway {
         // Simulate network call latency
         log.info("Calling payment gateway: amount={} {}, ref={}", amount, currency, paymentReference);
 
-        // In production: replace with Stripe/Razorpay SDK call
+        // In production: replace with Razorpay/PayU SDK call
         // PaymentIntent intent = Stripe.paymentIntents.create(params);
         // return intent.getId();
 

@@ -12,7 +12,7 @@ CREATE TABLE payments (
     booking_id             UUID          NOT NULL,
     user_id                UUID          NOT NULL,
     amount                 NUMERIC(12,2) NOT NULL,
-    currency               VARCHAR(10)   NOT NULL DEFAULT 'USD',
+    currency               VARCHAR(10)   NOT NULL DEFAULT 'INR',
     status                 VARCHAR(20)   NOT NULL DEFAULT 'PENDING',
     payment_method         VARCHAR(20)   NOT NULL,
     payment_reference      VARCHAR(50),

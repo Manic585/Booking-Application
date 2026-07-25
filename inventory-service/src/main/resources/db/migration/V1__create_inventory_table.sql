@@ -10,7 +10,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE inventory_items (
     id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     reference_id     UUID         NOT NULL,
-    item_type        VARCHAR(30)  NOT NULL,
+    seat_class       VARCHAR(30)  NOT NULL,
     label            VARCHAR(50)  NOT NULL,
     available_date   DATE         NOT NULL,
     status           VARCHAR(20)  NOT NULL DEFAULT 'AVAILABLE',
@@ -24,7 +24,7 @@ CREATE TABLE inventory_items (
 );
 
 -- Composite index for availability queries (most common read path)
-CREATE INDEX idx_inv_type_date_status ON inventory_items (item_type, available_date, status);
+CREATE INDEX idx_inv_class_date_status ON inventory_items (seat_class, available_date, status);
 CREATE INDEX idx_inv_ref_date        ON inventory_items (reference_id, available_date);
 CREATE INDEX idx_inv_booking         ON inventory_items (booking_id) WHERE booking_id IS NOT NULL;
 CREATE INDEX idx_inv_held_expires    ON inventory_items (hold_expires_at) WHERE status = 'HELD';

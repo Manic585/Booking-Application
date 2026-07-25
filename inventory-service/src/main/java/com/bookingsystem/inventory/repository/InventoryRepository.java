@@ -20,8 +20,8 @@ import java.util.UUID;
 @Repository
 public interface InventoryRepository extends JpaRepository<InventoryItem, UUID> {
 
-    Page<InventoryItem> findByItemTypeAndAvailableDateAndStatus(
-            InventoryItem.ItemType itemType,
+    Page<InventoryItem> findBySeatClassAndAvailableDateAndStatus(
+            InventoryItem.SeatClass seatClass,
             LocalDate date,
             InventoryItem.Status status,
             Pageable pageable);

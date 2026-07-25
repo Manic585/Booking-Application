@@ -6,17 +6,16 @@ import { AiService, ChatMessage, ChatResponse } from '../../core/services/ai.ser
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
-  selector: 'app-ai-chat',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
-  template: `
+    selector: 'app-ai-chat',
+    imports: [CommonModule, FormsModule, RouterLink],
+    template: `
     <div class="chat-page">
       <div class="chat-header">
         <div class="header-left">
           <span class="bot-icon">🤖</span>
           <div>
             <h2>BookIt AI Assistant</h2>
-            <p class="subtitle">Powered by GPT-4o-mini · Search, Book, Explore</p>
+            <p class="subtitle">Powered by GPT-4o-mini · Find shows, book seats, get recommendations</p>
           </div>
         </div>
         <div class="header-actions">
@@ -24,72 +23,84 @@ import { AuthService } from '../../core/auth/auth.service';
           <a class="back-btn" routerLink="/search">← Search</a>
         </div>
       </div>
-
+    
       <div class="messages-container" #messagesContainer>
         <!-- Welcome message -->
-        <div class="welcome" *ngIf="messages().length === 0">
-          <div class="welcome-icon">🤖</div>
-          <h3>Hi! I'm BookIt AI</h3>
-          <p>I can help you find flights, hotels, and cinema seats — and answer your booking questions.</p>
-          <div class="quick-prompts">
-            <button *ngFor="let prompt of quickPrompts" (click)="sendQuickPrompt(prompt)">{{ prompt }}</button>
+        @if (messages().length === 0) {
+          <div class="welcome">
+            <div class="welcome-icon">🤖</div>
+            <h3>Hi! I'm BookIt AI</h3>
+            <p>I can help you find movie shows and cinema seats — and answer your booking questions.</p>
+            <div class="quick-prompts">
+              @for (prompt of quickPrompts; track prompt) {
+                <button (click)="sendQuickPrompt(prompt)">{{ prompt }}</button>
+              }
+            </div>
           </div>
-        </div>
-
+        }
+    
         <!-- Messages -->
         <div class="message-list">
-          <div *ngFor="let msg of messages()"
-               class="message"
-               [class.user-message]="msg.role === 'user'"
-               [class.assistant-message]="msg.role === 'assistant'">
-            <div class="message-avatar">{{ msg.role === 'user' ? '👤' : '🤖' }}</div>
-            <div class="message-body">
-              <div class="message-content" [innerHTML]="formatMessage(msg.content)"></div>
-              <div class="message-time">{{ msg.timestamp | date:'HH:mm' }}</div>
-            </div>
-          </div>
-
-          <!-- Typing indicator -->
-          <div class="message assistant-message" *ngIf="loading()">
-            <div class="message-avatar">🤖</div>
-            <div class="message-body">
-              <div class="typing-indicator">
-                <span></span><span></span><span></span>
+          @for (msg of messages(); track msg) {
+            <div
+              class="message"
+              [class.user-message]="msg.role === 'user'"
+              [class.assistant-message]="msg.role === 'assistant'">
+              <div class="message-avatar">{{ msg.role === 'user' ? '👤' : '🤖' }}</div>
+              <div class="message-body">
+                <div class="message-content" [innerHTML]="formatMessage(msg.content)"></div>
+                <div class="message-time">{{ msg.timestamp | date:'HH:mm' }}</div>
               </div>
             </div>
-          </div>
+          }
+    
+          <!-- Typing indicator -->
+          @if (loading()) {
+            <div class="message assistant-message">
+              <div class="message-avatar">🤖</div>
+              <div class="message-body">
+                <div class="typing-indicator">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+          }
         </div>
       </div>
-
+    
       <!-- Suggested actions -->
-      <div class="suggestions" *ngIf="suggestions().length > 0 && !loading()">
-        <button *ngFor="let action of suggestions()"
-                class="suggestion-chip"
-                (click)="sendQuickPrompt(action)">
-          {{ action }}
-        </button>
-      </div>
-
+      @if (suggestions().length > 0 && !loading()) {
+        <div class="suggestions">
+          @for (action of suggestions(); track action) {
+            <button
+              class="suggestion-chip"
+              (click)="sendQuickPrompt(action)">
+              {{ action }}
+            </button>
+          }
+        </div>
+      }
+    
       <!-- Input area -->
       <div class="input-area">
         <textarea
           [(ngModel)]="inputMessage"
-          placeholder="Ask me anything — 'Find flights to London', 'What can I book?'..."
+          placeholder="Ask me anything — 'Find a recliner seat for Pathaan tonight', 'What can I book?'..."
           (keydown.enter)="onEnterKey($event)"
           [disabled]="loading()"
           rows="1"
           class="message-input"
-          #inputRef></textarea>
+        #inputRef></textarea>
         <button class="send-btn"
-                (click)="sendMessage()"
-                [disabled]="loading() || !inputMessage.trim()">
+          (click)="sendMessage()"
+          [disabled]="loading() || !inputMessage.trim()">
           {{ loading() ? '⏳' : '➤' }}
         </button>
       </div>
       <div class="input-hint">Press Enter to send · Shift+Enter for new line</div>
     </div>
-  `,
-  styles: [`
+    `,
+    styles: [`
     .chat-page { display:flex; flex-direction:column; height:calc(100vh - 56px); max-width:900px; margin:0 auto; background:#fff; }
 
     /* Header */
@@ -175,9 +186,8 @@ export class AiChatComponent implements AfterViewChecked, OnInit {
 
   quickPrompts = [
     'What can I book here?',
-    'Find me a flight to London tomorrow',
-    'Show available hotel rooms in NYC this weekend',
-    'Any cinema seats available today?',
+    'Any recliner seats available today?',
+    'Recommend a seat class under ₹500',
     'How do I cancel a booking?'
   ];
 

@@ -42,8 +42,8 @@ public class BookingEventConsumer {
         PaymentRequest request = new PaymentRequest();
         request.setBookingId(event.bookingId());
         request.setAmount(event.amount());
-        request.setCurrency("USD");
-        request.setPaymentMethod(Payment.PaymentMethod.CARD);
+        request.setCurrency("INR");
+        request.setPaymentMethod(Payment.PaymentMethod.UPI);
         request.setPaymentReference("AUTO-" + event.bookingId());
         // Use bookingId as idempotency key for auto-payment from saga
         request.setIdempotencyKey("auto-pay-" + event.bookingId());

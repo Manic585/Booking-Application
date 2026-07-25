@@ -1,7 +1,7 @@
 export interface InventoryItem {
   id: string;
   referenceId: string;
-  itemType: string;
+  seatClass: string;
   label: string;
   availableDate: string;
   status: string;
@@ -19,7 +19,7 @@ export interface AvailabilityResponse {
 
 export interface CreateBookingRequest {
   referenceId: string;
-  bookingType: 'FLIGHT' | 'HOTEL' | 'CINEMA';
+  bookingType: 'CINEMA';
   inventoryItemId: string;
   bookingDate: string;
   totalAmount: number;

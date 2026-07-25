@@ -6,29 +6,29 @@ import { BookingService } from '../../core/services/booking.service';
 import { AvailabilityResponse, InventoryItem } from '../../core/models/booking.model';
 
 @Component({
-  selector: 'app-search',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  template: `
+    selector: 'app-search',
+    imports: [CommonModule, ReactiveFormsModule],
+    template: `
     <div class="page">
       <header class="page-header">
-        <h1>Search Availability</h1>
+        <h1>Search Showtimes</h1>
       </header>
-
+    
       <div class="search-card">
         <form [formGroup]="searchForm" (ngSubmit)="search()">
           <div class="form-row">
             <div class="field">
-              <label>Type</label>
-              <select formControlName="type">
-                <option value="FLIGHT_SEAT">✈️ Flight</option>
-                <option value="HOTEL_ROOM">🏨 Hotel</option>
-                <option value="CINEMA_SEAT">🎬 Cinema</option>
+              <label>Seat Class</label>
+              <select formControlName="seatClass">
+                <option value="NORMAL">Normal</option>
+                <option value="EXECUTIVE">Executive</option>
+                <option value="PREMIUM">Premium</option>
+                <option value="RECLINER">Recliner</option>
               </select>
             </div>
             <div class="field">
-              <label>Reference ID</label>
-              <input formControlName="referenceId" placeholder="Flight/Hotel/Show ID" />
+              <label>Show ID</label>
+              <input formControlName="referenceId" placeholder="Movie Show ID" />
             </div>
             <div class="field">
               <label>Date</label>
@@ -40,41 +40,46 @@ import { AvailabilityResponse, InventoryItem } from '../../core/models/booking.m
           </div>
         </form>
       </div>
-
-      <div class="results" *ngIf="results()">
-        <div class="results-header">
-          <span>{{ results()!.totalAvailable }} seats/rooms available</span>
-          <span>for {{ results()!.date }}</span>
-        </div>
-
-        <div class="items-grid">
-          <div class="item-card"
-               *ngFor="let item of results()!.items"
-               [class.selected]="selectedItem()?.id === item.id"
-               (click)="selectItem(item)">
-            <div class="item-label">{{ item.label }}</div>
-            <div class="item-price">\${{ item.price | number:'1.2-2' }}</div>
-            <div class="item-status" [class.available]="item.status === 'AVAILABLE'">
-              {{ item.status }}
-            </div>
+    
+      @if (results()) {
+        <div class="results">
+          <div class="results-header">
+            <span>{{ results()!.totalAvailable }} seats available</span>
+            <span>for {{ results()!.date }}</span>
           </div>
+          <div class="items-grid">
+            @for (item of results()!.items; track item) {
+              <div class="item-card"
+                [class.selected]="selectedItem()?.id === item.id"
+                (click)="selectItem(item)">
+                <div class="item-label">{{ item.label }}</div>
+                <div class="item-price">₹{{ item.price | number:'1.2-2' }}</div>
+                <div class="item-status" [class.available]="item.status === 'AVAILABLE'">
+                  {{ item.status }}
+                </div>
+              </div>
+            }
+          </div>
+          @if (selectedItem()) {
+            <div class="booking-summary">
+              <h3>Selected: {{ selectedItem()!.label }}</h3>
+              <p>Price: ₹{{ selectedItem()!.price | number:'1.2-2' }}</p>
+              <button class="book-btn" (click)="proceedToBook()">
+                Proceed to Book →
+              </button>
+            </div>
+          }
         </div>
-
-        <div class="booking-summary" *ngIf="selectedItem()">
-          <h3>Selected: {{ selectedItem()!.label }}</h3>
-          <p>Price: \${{ selectedItem()!.price | number:'1.2-2' }}</p>
-          <button class="book-btn" (click)="proceedToBook()">
-            Proceed to Book →
-          </button>
+      }
+    
+      @if (results() && results()!.items.length === 0) {
+        <div class="empty">
+          No availability for the selected date. Try another date.
         </div>
-      </div>
-
-      <div class="empty" *ngIf="results() && results()!.items.length === 0">
-        No availability for the selected date. Try another date.
-      </div>
+      }
     </div>
-  `,
-  styles: [`
+    `,
+    styles: [`
     .page { max-width:900px; margin:2rem auto; padding:0 1rem; }
     .page-header { margin-bottom:1.5rem; }
     .search-card { background:white; padding:1.5rem; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,.1); margin-bottom:2rem; }
@@ -110,7 +115,7 @@ export class SearchComponent {
     private router: Router
   ) {
     this.searchForm = this.fb.group({
-      type: ['FLIGHT_SEAT', Validators.required],
+      seatClass: ['NORMAL', Validators.required],
       referenceId: ['', Validators.required],
       date: [this.today, Validators.required]
     });
@@ -120,9 +125,9 @@ export class SearchComponent {
     if (this.searchForm.invalid) return;
     this.loading.set(true);
     this.selectedItem.set(null);
-    const { type, referenceId, date } = this.searchForm.value;
+    const { seatClass, referenceId, date } = this.searchForm.value;
 
-    this.bookingService.searchAvailability(referenceId, date, type).subscribe({
+    this.bookingService.searchAvailability(referenceId, date, seatClass).subscribe({
       next: res => {
         this.results.set(res);
         this.loading.set(false);
@@ -144,7 +149,7 @@ export class SearchComponent {
       state: {
         item,
         date: this.searchForm.value.date,
-        bookingType: this.searchForm.value.type.replace('_SEAT', '').replace('_ROOM', '')
+        bookingType: 'CINEMA'
       }
     });
   }

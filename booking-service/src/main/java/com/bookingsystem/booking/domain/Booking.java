@@ -31,7 +31,7 @@ public class Booking {
     @Column(nullable = false)
     private UUID userId;
 
-    /** External entity being booked (flight, hotel, movie screening) */
+    /** ID of the movie show (screening) being booked */
     @Column(nullable = false)
     private UUID referenceId;
 
@@ -39,7 +39,7 @@ public class Booking {
     @Column(nullable = false, length = 30)
     private BookingType bookingType;
 
-    /** The specific inventory item (seat/room) */
+    /** The specific inventory item (cinema seat) */
     @Column(nullable = false)
     private UUID inventoryItemId;
 
@@ -77,6 +77,6 @@ public class Booking {
     }
 
     public enum BookingType {
-        FLIGHT, HOTEL, CINEMA
+        CINEMA
     }
 }

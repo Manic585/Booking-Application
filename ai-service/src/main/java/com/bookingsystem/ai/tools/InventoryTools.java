@@ -22,15 +22,15 @@ public class InventoryTools {
     private String inventoryUrl;
 
     @Tool(description = """
-            Search for available inventory items (flight seats, hotel rooms, or cinema seats).
-            Returns a JSON list of available items with IDs, labels, prices, and availability status.
+            Search for available cinema seats for a specific movie show.
+            Returns a JSON list of available seats with IDs, labels, prices, and availability status.
             """)
     public String searchAvailability(
-            @ToolParam(description = "Item type — one of: FLIGHT_SEAT, HOTEL_ROOM, CINEMA_SEAT") String itemType,
-            @ToolParam(description = "UUID reference ID of the specific route, hotel, or show") String referenceId,
+            @ToolParam(description = "Seat class — one of: NORMAL, EXECUTIVE, PREMIUM, RECLINER") String seatClass,
+            @ToolParam(description = "UUID reference ID of the specific movie show") String referenceId,
             @ToolParam(description = "Date to check in YYYY-MM-DD format. Use today's date if not specified.") String date) {
 
-        log.debug("searchAvailability(type={}, ref={}, date={})", itemType, referenceId, date);
+        log.debug("searchAvailability(seatClass={}, ref={}, date={})", seatClass, referenceId, date);
         try {
             String effectiveDate = (date == null || date.isBlank())
                     ? LocalDate.now().toString()
@@ -40,7 +40,7 @@ public class InventoryTools {
                     .fromHttpUrl(inventoryUrl + "/api/inventory/availability")
                     .queryParam("referenceId", referenceId)
                     .queryParam("date", effectiveDate)
-                    .queryParam("type", itemType)
+                    .queryParam("seatClass", seatClass)
                     .queryParam("size", 20)
                     .toUriString();
 
@@ -59,36 +59,32 @@ public class InventoryTools {
     }
 
     @Tool(description = """
-            List all available booking options with their type names, descriptions, and sample reference IDs.
+            List all available seat classes with their descriptions and sample show reference IDs.
             Use this when the user asks what options are available or what they can book.
             """)
     public String listBookingOptions() {
         return """
                 {
-                  "availableTypes": [
+                  "availableSeatClasses": [
                     {
-                      "type": "FLIGHT_SEAT",
-                      "description": "Airplane seat — economy, business, or first class",
+                      "type": "NORMAL",
+                      "description": "Standard seating, most affordable",
                       "samples": [
-                        {"referenceId": "00000000-0000-0000-0000-000000000001", "name": "NYC → LAX"},
-                        {"referenceId": "00000000-0000-0000-0000-000000000002", "name": "NYC → LHR (London)"}
+                        {"referenceId": "00000000-0000-0000-0000-000000000020", "name": "PVR Phoenix Mall, Mumbai — Pathaan"},
+                        {"referenceId": "00000000-0000-0000-0000-000000000021", "name": "INOX Forum Mall, Bengaluru — Jawan"}
                       ]
                     },
                     {
-                      "type": "HOTEL_ROOM",
-                      "description": "Hotel room — standard, deluxe, or suite",
-                      "samples": [
-                        {"referenceId": "00000000-0000-0000-0000-000000000010", "name": "Grand Hotel NYC"},
-                        {"referenceId": "00000000-0000-0000-0000-000000000011", "name": "Sea View Resort Miami"}
-                      ]
+                      "type": "EXECUTIVE",
+                      "description": "Better legroom, mid-row seating"
                     },
                     {
-                      "type": "CINEMA_SEAT",
-                      "description": "Cinema seat for a movie show",
-                      "samples": [
-                        {"referenceId": "00000000-0000-0000-0000-000000000020", "name": "AMC — Avengers: Doomsday"},
-                        {"referenceId": "00000000-0000-0000-0000-000000000021", "name": "Cineplex — The Matrix 5"}
-                      ]
+                      "type": "PREMIUM",
+                      "description": "Front rows, wider seats"
+                    },
+                    {
+                      "type": "RECLINER",
+                      "description": "Fully reclining premium seat"
                     }
                   ]
                 }

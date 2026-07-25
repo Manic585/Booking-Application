@@ -13,7 +13,7 @@ import java.util.UUID;
 public class PaymentRequest {
     @NotNull UUID bookingId;
     @NotNull @Positive BigDecimal amount;
-    @NotBlank String currency = "USD";
+    @NotBlank String currency = "INR";
     @NotNull Payment.PaymentMethod paymentMethod;
     @NotBlank String paymentReference;
     @NotBlank String idempotencyKey;
